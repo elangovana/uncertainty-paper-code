@@ -29,7 +29,7 @@ abbreviations = {
     'Support Devices': 'SD'
 }
 pa_pd_map = {
-            1.0:0.99
+            1.0:0.97
         }
 
 random_labeller_pd = 0.5
