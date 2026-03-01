@@ -14,6 +14,8 @@ import seaborn as sns
 
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon, Rectangle
+from scipy import stats
+import statistics
 
 pd_levels = [0.6, 0.8, 1.0, 'All']
 color_map = {0.6: '#d62728', 0.8: '#ff7f0e', 1.0: '#2ca02c', 'All': 'gray'}
@@ -49,7 +51,8 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
 
     fig, ax = plt.subplots(figsize=(10, 7))
 
-    pvalues = []
+    mean_p_values = []
+    variance_p_values = []
 
     # Group by PA level and calculate averages
     all_data_labels = []
@@ -69,9 +72,13 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
         if p[0] == "All" or p[1] == "All": continue
 
         ttest_result = ttest_ind(df_fmt[p[0]], df_fmt[p[1]], nan_policy="omit", equal_var=False)
-        pvalues.append(
+        mean_p_values.append(
             (p[0], p[1], ttest_result.pvalue)
         )
+        stat, variance_p_value = stats.levene(df_fmt[p[0]], df_fmt[p[1]],  nan_policy="omit",   center="trimmed")
+        variance_p_values.append((p[0], p[1], variance_p_value))
+
+
 
     x_label = "$p_d$"
     if not y_label:
@@ -81,12 +88,13 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
                 meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"})
 
     # adding statistical annotation
-    ax.set_ylabel(y_label, fontsize=18, fontweight='bold')
-    ax.set_xlabel(x_label, fontsize=18, fontweight='bold')
-    ax.tick_params(axis='both', labelsize=18)
-    annotations = pvalues
-    starbars.draw_annotation(annotations, ax=ax, fontsize=18)
-    ax.set_ylim(-0.3, 1.0)
+    ax.set_ylabel(y_label, fontsize=20, fontweight='bold')
+    ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
+    ax.tick_params(axis='both', labelsize=20)
+    starbars.draw_annotation(mean_p_values, ax=ax, fontsize=20)
+    starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, color='red')
+
+    ax.set_ylim(-0.3, 1.3)
     return fig
 
 
