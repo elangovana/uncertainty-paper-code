@@ -57,18 +57,21 @@ class Workflow:
 
 def run_inference(
         model_name: str,
-        images_dir: str,
+        data_dir: str|None = None,
 ):
     model_name_mapping = {
         "gpt-4o": lambda: OpenAIInference(model_name),
         "gpt-5.1": lambda: OpenAIInference(model_name),
         "gemini/gemini-3-pro-preview": lambda: GeminiInference(model_name),
+        "gemini/gemini-3.1-pro-preview": lambda: GeminiInference(model_name),
 
     }
     model_clean_name =  re.sub(r"\\/\s+", "_", model_name)
 
     inferencer = model_name_mapping[model_name]()
-    data_dir = images_dir
+    if not data_dir:
+        data_dir = os.path.join(os.path.dirname(__file__), "..", "..",
+                                "data_dir/images/chexpert/chexlocalize/CheXpert/test")
     checkpoint_dir = os.path.join(os.path.dirname(__file__), "..", "..", f"data_dir/checkpoints/{model_clean_name}")
     output_dir = os.path.join(os.path.dirname(__file__), "..", "..", f"data_dir/output/{model_clean_name}")
     Workflow(inferencer).run_workflow(data_dir, output_dir, checkpoint_dir)
