@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import starbars
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, ttest_rel
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -41,7 +41,6 @@ def load_data(json_path):
     return pd.DataFrame(data)
 
 
-
 def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label=None):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
@@ -61,7 +60,7 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
     df_fmt = pd.DataFrame()
     for pa_level in pd_levels:
         # if pa_level == "All": continue
-        #print(pa_level, df['PA'])
+        # print(pa_level, df['PA'])
         pa_data = df[df['PA'] == pa_level]
         deltas = pa_data[column_name].values
 
@@ -75,10 +74,8 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
         mean_p_values.append(
             (p[0], p[1], ttest_result.pvalue)
         )
-        stat, variance_p_value = stats.levene(df_fmt[p[0]], df_fmt[p[1]],  nan_policy="omit",   center="trimmed")
+        stat, variance_p_value = stats.levene(df_fmt[p[0]], df_fmt[p[1]], nan_policy="omit", center="trimmed")
         variance_p_values.append((p[0], p[1], variance_p_value))
-
-
 
     x_label = "$p_d$"
     if not y_label:
@@ -95,6 +92,65 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
     starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, color='red')
 
     ax.set_ylim(-0.3, 1.3)
+    return fig
+
+
+def create_combined_paired_delta_box_plot_by_df(df, column_name_1, column_name_2, metric_label, y_label=None):
+    sns.set_style("darkgrid")
+    sns.set(font_scale=2.5)
+    sns.set(
+        rc={'axes.facecolor': 'none', 'figure.facecolor': 'none', "grid.color": "lightgray", "axes.edgecolor": "black"}
+    )
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    mean_p_values = {}
+    max_delta_by_pa = {}
+
+
+    # Group by PA level and calculate averages
+    all_data_labels = []
+
+    df_fmt = pd.DataFrame()
+    for pa_level in pd_levels:
+        pa_data = df[df['PA'] == pa_level]
+        deltas = list(pa_data[column_name_1] - pa_data[column_name_2])
+
+
+        df_fmt[str(pa_level)] = deltas
+        all_data_labels.append(str(pa_level))
+
+        ttest_result = ttest_rel(pa_data[column_name_1], pa_data[column_name_2], nan_policy="omit")
+        mean_p_values[str(pa_level)] = ttest_result.pvalue
+        max_delta_by_pa[str(pa_level)] = max(deltas)
+
+    x_label = "$p_d$"
+    if not y_label:
+        y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{{metric_label}}}$"
+    boxplt = sns.boxplot(data=df_fmt, ax=ax, fill=True, showmeans=True, order=all_data_labels,
+                         palette={str(k): v for k, v in color_map.items()},
+                         meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"})
+
+    for i, pa in enumerate(all_data_labels):
+        paired_p_val = mean_p_values[pa]
+        if paired_p_val > 0.05:
+            paired_p_val = f"ns ({paired_p_val:0.2f})"
+        elif 0.01 <paired_p_val <= 0.5:
+            paired_p_val =f"*"
+        elif 0.001 <paired_p_val <= 0.01:
+            paired_p_val =f"**"
+        elif 0.0001 <paired_p_val <= 0.001:
+            paired_p_val =f"***"
+        else:
+            paired_p_val = f"****"
+        boxplt.annotate(paired_p_val, xy=(i, max_delta_by_pa[pa]+0.1), horizontalalignment='center')
+
+    # adding statistical annotation
+    ax.set_ylabel(y_label, fontsize=20, fontweight='bold')
+    ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
+    ax.tick_params(axis='both', labelsize=20)
+
+    ax.set_ylim(-0.3, 0.8)
     return fig
 
 
@@ -213,14 +269,11 @@ def create_combined_delta_simple_boxplot_accuracy():
     return create_combined_simple_boxplot_seaborn('agg_human - model_mean_accuracy', "Accuracy")
 
 
-
-
 def main():
     print("Creating Combined Delta F1 and Accuracy Analysis...")
 
     output_dir = Path(__file__).parent.parent.parent / "visualizations"
     output_dir.mkdir(exist_ok=True)
-
 
     fig = create_combined_delta_simple_boxplot_f1()
     fig.savefig(output_dir / "combined_simple_boxplot_delte_f1_analysis.png", dpi=400, bbox_inches='tight')
@@ -231,7 +284,6 @@ def main():
     fig.savefig(output_dir / "combined_simple_boxplot_delte_accuracy_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta accuracy Analysis visualization saved")
-
 
 
 if __name__ == "__main__":
