@@ -143,7 +143,9 @@ def create_combined_paired_delta_box_plot_by_df(df, column_name_1, column_name_2
             paired_p_val =f"***"
         else:
             paired_p_val = f"****"
-        boxplt.annotate(paired_p_val, xy=(i, max_delta_by_pa[pa]+0.1), horizontalalignment='center', annot_kws={"fontsize": 20})
+        #boxplt.annotate(paired_p_val, xy=(i, max_delta_by_pa[pa]+0.1), horizontalalignment='center', annot_kws={"fontsize": 20})
+        boxplt.text(i, max_delta_by_pa[pa] + 0.1, paired_p_val,horizontalalignment='center',
+                    size='large')
 
     # adding statistical annotation
     ax.set_ylabel(y_label, fontsize=20, fontweight='bold')
