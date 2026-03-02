@@ -273,6 +273,13 @@ def main():
     create_plots(Path(__file__).parent.parent.parent / "data_dir/checkpoints/gpt-5.1/gpt-5.1_scores_exclude_small_samples.json",
                  "GPT 5.1", "gpt51")
 
+    create_plots(
+        Path(
+            __file__).parent.parent.parent / "data_dir/checkpoints/gemini31propreview/gemini31propreview_scores_exclude_small_samples.json",
+        "Gemini 3.1 Preview", "gemini31")
+
+
+
 
 if __name__ == "__main__":
     main()
