@@ -152,7 +152,7 @@ def create_combined_paired_delta_box_plot_by_df(df, column_name_1, column_name_2
     ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
     ax.tick_params(axis='both', labelsize=20)
 
-    ax.set_ylim(-0.3, 0.8)
+    ax.set_ylim(-0.3, 0.6)
     return fig
 
 
