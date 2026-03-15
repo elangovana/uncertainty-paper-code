@@ -19,7 +19,7 @@ import statistics
 
 pd_levels = [0.6, 0.8, 1.0, 'All']
 color_map = {0.6: '#d62728', 0.8: '#ff7f0e', 1.0: '#2ca02c', 'All': 'gray'}
-model_markers = {'Gemini 2.5 Pro': 'o', 'Gemini 3.0 Preview': 's', 'GPT 5.1': '^'}
+#model_markers = {'Gemini 2.5 Pro': 'o', 'Gemini 3.0 Preview': 's', 'GPT 5.1': '^'}
 pd_levels_symbol_maps = {
     "All": "="
 }
@@ -29,6 +29,8 @@ models = [
         __file__).parent.parent.parent / "data_dir/checkpoints/gemini25pro/gemini25pro_scores_exclude_small_samples.json"),
     ('Gemini 3.0 Preview', Path(
         __file__).parent.parent.parent / "data_dir/checkpoints/gemini30preview/gemini30preview_scores_exclude_small_samples.json"),
+    ('Gemini 3.1 Pro', Path(
+        __file__).parent.parent.parent / "data_dir/checkpoints/gemini31propreview/gemini31propreview_scores_exclude_small_samples.json"),
     ('GPT 5.1',
      Path(__file__).parent.parent.parent / "data_dir/checkpoints/gpt-5.1/gpt-5.1_scores_exclude_small_samples.json")
 ]
@@ -74,7 +76,7 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
         mean_p_values.append(
             (p[0], p[1], ttest_result.pvalue)
         )
-        stat, variance_p_value = stats.levene(df_fmt[p[0]], df_fmt[p[1]], nan_policy="omit", center="trimmed")
+        stat, variance_p_value = stats.levene(df_fmt[p[0]], df_fmt[p[1]], nan_policy="omit", center="trimmed", proportiontocut=0.10)
         variance_p_values.append((p[0], p[1], variance_p_value))
 
     x_label = "$p_d$"
@@ -88,8 +90,8 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
     ax.set_ylabel(y_label, fontsize=20, fontweight='bold')
     ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
     ax.tick_params(axis='both', labelsize=20)
-    starbars.draw_annotation(mean_p_values, ax=ax, fontsize=20)
-    starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, color='red')
+    starbars.draw_annotation(mean_p_values, ax=ax, fontsize=20, bar_gap=0.01)
+    starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, bar_gap=0.01, color='red')
 
     ax.set_ylim(-0.3, 1.3)
     return fig
@@ -161,7 +163,7 @@ def create_combined_simple_boxplot_seaborn(column_name, metric_label):
     for i, (model_name, json_path) in enumerate(models):
         df_m = load_data(json_path)
         df_m["model"] = model_name
-        df_m["model_marker"] = model_markers[model_name]
+        #df_m["model_marker"] =  [model_name]
         dfs.append(df_m)
 
     df = pd.concat(dfs)
@@ -180,7 +182,7 @@ def create_combined_simple_boxplot(column_name, metric_label):
     for i, (model_name, json_path) in enumerate(models):
         df_m = load_data(json_path)
         df_m["model"] = model_name
-        df_m["model_marker"] = model_markers[model_name]
+        #df_m["model_marker"] = model_markers[model_name]
         dfs.append(df_m)
 
     df = pd.concat(dfs)
