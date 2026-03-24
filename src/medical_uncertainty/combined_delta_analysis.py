@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import itertools
 
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 
@@ -12,14 +10,11 @@ from scipy.stats import ttest_ind, ttest_rel
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from matplotlib.lines import Line2D
-from matplotlib.patches import Polygon, Rectangle
+
 from scipy import stats
-import statistics
 
 pd_levels = [0.6, 0.8, 1.0, 'All']
 color_map = {0.6: '#d62728', 0.8: '#ff7f0e', 1.0: '#2ca02c', 'All': 'gray'}
-#model_markers = {'Gemini 2.5 Pro': 'o', 'Gemini 3.0 Preview': 's', 'GPT 5.1': '^'}
 pd_levels_symbol_maps = {
     "All": "="
 }
@@ -170,11 +165,11 @@ def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metri
 
 
 
-def create_combined_delta_simple_boxplot_f1():
+def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot():
     return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_f1-score', "F1")
 
 
-def create_combined_delta_simple_boxplot_accuracy():
+def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot():
     return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_accuracy', "Accuracy")
 
 
@@ -184,12 +179,12 @@ def main():
     output_dir = Path(__file__).parent.parent.parent / "visualizations"
     output_dir.mkdir(exist_ok=True)
 
-    fig = create_combined_delta_simple_boxplot_f1()
+    fig = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot()
     fig.savefig(output_dir / "combined_simple_boxplot_delte_f1_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta F1 Analysis visualization saved")
 
-    fig = create_combined_delta_simple_boxplot_accuracy()
+    fig = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot()
     fig.savefig(output_dir / "combined_simple_boxplot_delte_accuracy_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta accuracy Analysis visualization saved")
