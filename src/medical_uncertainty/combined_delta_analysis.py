@@ -43,7 +43,7 @@ def load_data(json_path):
     return pd.DataFrame(data)
 
 
-def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label=None):
+def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
     sns.set(
@@ -57,12 +57,10 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
 
     # Group by PA level and calculate averages
     all_data_labels = []
-    # Define median properties with a specific color and linewidth
-    median_properties = dict(color='black', linewidth=2.5)
+
     df_fmt = pd.DataFrame()
     for pa_level in pd_levels:
-        # if pa_level == "All": continue
-        # print(pa_level, df['PA'])
+
         pa_data = df[df['PA'] == pa_level]
         deltas = pa_data[column_name].values
 
@@ -97,7 +95,7 @@ def create_combined_simple_box_plot_by_df(df, column_name, metric_label, y_label
     return fig
 
 
-def create_combined_paired_delta_box_plot_by_df(df, column_name_1, column_name_2, metric_label, y_label=None):
+def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metric_label, y_label=None):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
     sns.set(
@@ -158,7 +156,7 @@ def create_combined_paired_delta_box_plot_by_df(df, column_name_1, column_name_2
     return fig
 
 
-def create_combined_simple_boxplot_seaborn(column_name, metric_label):
+def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metric_label):
     dfs = []
     for i, (model_name, json_path) in enumerate(models):
         df_m = load_data(json_path)
@@ -168,109 +166,16 @@ def create_combined_simple_boxplot_seaborn(column_name, metric_label):
 
     df = pd.concat(dfs)
 
-    return create_combined_simple_box_plot_by_df(df, column_name, metric_label)
+    return create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label)
 
-
-def create_combined_simple_boxplot(column_name, metric_label):
-    """Create plot showing all three models together for accuracy"""
-    fig, ax = plt.subplots(figsize=(20, 10))
-
-    # Small offsets to separate overlapping points
-    offsets = [-0.005, 0, 0.005]
-
-    dfs = []
-    for i, (model_name, json_path) in enumerate(models):
-        df_m = load_data(json_path)
-        df_m["model"] = model_name
-        #df_m["model_marker"] = model_markers[model_name]
-        dfs.append(df_m)
-
-    df = pd.concat(dfs)
-
-    pvalues = []
-
-    # Group by PA level and calculate averages
-    all_data = []
-    all_data_labels = []
-    # Define median properties with a specific color and linewidth
-    median_properties = dict(color='black', linewidth=2.5)
-    for pa_level in pd_levels:
-        # if pa_level == "All": continue
-        pa_data = df[df['PA'] == pa_level]
-        deltas = pa_data[column_name]
-
-        all_data.append(deltas)
-        all_data_labels.append(pa_level)
-
-        if pa_level not in ["All", 1.0]:
-            df_pd1 = df[df["PA"] == 1.0][column_name]
-            df_pdnot1 = df[df["PA"] == pa_level][column_name]
-            ttest_result = ttest_ind(df_pd1, df_pdnot1, nan_policy="omit", equal_var=True)
-            pvalues.append(
-                {
-                    "basecompare": pa_level,
-                    "p-value": ttest_result.pvalue,
-                    "effect_size": abs(df_pd1.mean() - df_pdnot1.mean()),
-                    "metric": metric_label,
-                }
-            )
-
-        # if len(pa_data) == 0:
-    #     continue
-
-    # ax.set_xlim(0,0.7)
-
-    # Calculate delta (model - human) for f1
-    # ax.set_xlim(0.0, 0.8)
-    ax.set_ylim(-0.3, 0.6)
-
-    #
-    # # Plot with model-specific marker
-    bplot = ax.boxplot(all_data, medianprops=median_properties, showmeans=True)
-    for i in range(len(all_data)):
-        box = bplot['boxes'][i]
-        box_x = []
-        box_y = []
-        for j in range(5):
-            box_x.append(box.get_xdata()[j])
-            box_y.append(box.get_ydata()[j])
-        box_coords = np.column_stack([box_x, box_y])
-        ax.add_patch(Polygon(box_coords, facecolor=color_map[all_data_labels[i]], alpha=0.7))
-
-        # for patch in bplot['boxes']:
-        #     patch.set_gapcolor(color)
-        # for pc in violin_parts['bodies']:
-        #     pc.set_facecolor(color)
-        # boxplot_2d(deltas,ax=ax, color=color )
-
-    # Add horizontal line at y=0 (no difference)
-    ax.axhline(y=0, color='black', linestyle='--', alpha=0.5, label='No difference')
-
-    # # Create combined legend
-    # pa_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=color, edgecolor=color,
-    #                             label=f'$p_d{pd_levels_symbol_maps.get(pa_level, '\\rightarrow')}${pa_level}')
-    #               for pa_level, color in color_map.items()]
-
-    # Combine all handles into one legend
-    # all_handles = pa_handles
-    # ax.legend(handles=all_handles, loc='upper right', fontsize=10, ncol=2)
-    ax.set_xticklabels([f'$p_d{pd_levels_symbol_maps.get(pa_level, '\\rightarrow')}${pa_level}'
-                        for pa_level in color_map])
-    ax.set_ylabel(f'Δ {metric_label} (Human - Model)', fontsize=14, fontweight='bold')
-    # ax.set_title('Model Comparison: Average Accuracy Delta by PD Level\n(Circle size = total sample count)',
-    #             fontsize=14, fontweight='bold')
-    ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    return fig
 
 
 def create_combined_delta_simple_boxplot_f1():
-    return create_combined_simple_boxplot_seaborn('agg_human - model_mean_f1-score', "F1")
+    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_f1-score', "F1")
 
 
 def create_combined_delta_simple_boxplot_accuracy():
-    return create_combined_simple_boxplot_seaborn('agg_human - model_mean_accuracy', "Accuracy")
+    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_accuracy', "Accuracy")
 
 
 def main():
