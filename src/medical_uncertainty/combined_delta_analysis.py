@@ -112,7 +112,7 @@ def load_data(json_path):
     return pd.DataFrame(data)
 
 
-def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None):
+def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3)):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
     sns.set(
@@ -151,7 +151,7 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
         y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{{metric_label}}}$"
     sns.boxplot(data=df_fmt, ax=ax, fill=True, showmeans=True, order=all_data_labels,
                 palette={str(k): v for k, v in color_map.items()},
-                meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"})
+                meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"},patch_artist=True)
 
     # adding statistical annotation
     ax.set_ylabel(y_label, fontsize=20, fontweight='bold')
@@ -160,8 +160,9 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
     starbars.draw_annotation(mean_p_values, ax=ax, fontsize=20, bar_gap=0.01)
     starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, bar_gap=0.01, color='red')
 
-    ax.set_ylim(-0.3, 1.3)
-    return fig
+    ax.set_ylim(*y_min_max)
+
+    return fig, (ax, df_fmt)
 
 
 def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metric_label, y_label=None):
@@ -245,7 +246,7 @@ def create_boxplot_by_pd_df_all_models(metric_label, column_model_name,column_hu
     return create_boxplot_by_pd_df(metric_label, df, column_model_name, df_h, column_human_name )
 
 
-def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metric_label):
+def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metric_label, **kwargs):
     dfs = []
     for i, (model_name, json_path) in enumerate(models):
         df_m = load_data(json_path)
@@ -255,13 +256,21 @@ def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metri
 
     df = pd.concat(dfs)
 
-    return create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label)
+    fig, (ax, df_fmt) =  create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, **kwargs)
 
+    return fig, (ax, df_fmt)
 
 def create_multimodel_pd_boxplot_by_df_acc():
 
-    return create_boxplot_by_pd_df_all_models("Accuracy","model_accuracy",None )
+    fig, (ax, df_fmt) = create_multimodel_mean_variance_pd_comparer_boxplot_by_df("model_accuracy","Accuracy" , y_min_max=(0,1.4), y_label="Models Accuracy")
+    for i, col in enumerate(list(df_fmt.columns)):
+        if col.lower() == "all": continue
+        mean_value = df_fmt[col].mean()
+        ax.text(i, 0.1, f'{mean_value:.2f}({col})',
+                ha='center', va='bottom', color='black',
+                fontsize=20)
 
+    return fig, (ax, df_fmt)
 
 def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot():
     return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_f1-score', "F1")
@@ -277,20 +286,20 @@ def main():
     output_dir = Path(__file__).parent.parent.parent / "visualizations"
     output_dir.mkdir(exist_ok=True)
 
-    fig = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot()
+    fig,_ = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot()
     fig.savefig(output_dir / "combined_simple_boxplot_delte_f1_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta F1 Analysis visualization saved")
 
-    fig = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot()
+    fig,_ = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot()
     fig.savefig(output_dir / "combined_simple_boxplot_delte_accuracy_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta accuracy Analysis visualization saved")
 
 
 
-    fig = create_multimodel_pd_boxplot_by_df_acc()
-    fig.savefig(output_dir / "multimodel_pd_boxplot_acc.png", dpi=400, bbox_inches='tight')
+    fig, _ = create_multimodel_pd_boxplot_by_df_acc()
+    fig.savefig(output_dir / "multimodel_chexpert_pd_boxplot_acc.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("multimodel_pd_boxplot acc saved")
 
