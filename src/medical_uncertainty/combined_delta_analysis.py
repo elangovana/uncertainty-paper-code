@@ -262,7 +262,7 @@ def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metri
 
 def create_multimodel_pd_boxplot_by_df_acc():
 
-    fig, (ax, df_fmt) = create_multimodel_mean_variance_pd_comparer_boxplot_by_df("model_accuracy","Accuracy" , y_min_max=(0,1.4), y_label="Models Accuracy")
+    fig, (ax, df_fmt) = create_multimodel_mean_variance_pd_comparer_boxplot_by_df("model_accuracy","Accuracy" , y_min_max=(0,1.4), y_label="Models accuracy distribution")
     for i, col in enumerate(list(df_fmt.columns)):
         if col.lower() == "all": continue
         mean_value = df_fmt[col].mean()
@@ -273,11 +273,12 @@ def create_multimodel_pd_boxplot_by_df_acc():
     return fig, (ax, df_fmt)
 
 def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot():
-    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_f1-score', "F1")
+    metric_label = "F1"
+    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_f1-score', metric_label, y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{i,{metric_label}}}$ (Models $\\Delta$ distribution)")
 
 
 def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot():
-    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_accuracy', "Accuracy")
+    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_accuracy', "Accuracy", y_label = f"$\\Delta$ = $H_{{Acc}} - M_{{i,Acc}}$ (Models $\\Delta$ distribution)")
 
 
 def main():
