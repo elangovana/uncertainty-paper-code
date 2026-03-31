@@ -1,11 +1,15 @@
 import json
 import os
 from collections import Counter
+from pathlib import Path
 
 import fire
 import pandas as pd
 from sklearn.metrics import accuracy_score
 import structlog
+import matplotlib.pyplot as plt
+
+from medical_uncertainty.combined_delta_plots import create_multimodel_pd_boxplot_by_df_acc
 
 _logger = structlog.get_logger()
 UNKNOWN_PREDICTION = "-"
@@ -125,6 +129,8 @@ def compute_scores_by_pd_all_models(data_base_dir: str, ground_truth_files_dir: 
     }
     datatuples = mnli_datatuples + snli_datatuples
 
+    plot_data = []
+
     all_scores = {}
     for t in datatuples:
         data_dir = t[0]
@@ -137,6 +143,7 @@ def compute_scores_by_pd_all_models(data_base_dir: str, ground_truth_files_dir: 
         output_file_name = os.path.join(output_file_path, f"{input_file_prefix}_{gt_prefix}_scores_by_pd.json")
 
         scores_by_pd = compute_scores_by_pd_func(data_dir, ground_truth_file, output_file_name)
+        plot_data.extend( [ {"pd":float(k), "score": v["score"]} for k,v in scores_by_pd.items() ])
 
         if datadir_model_prefix not in all_scores:
             all_scores[datadir_model_prefix] = {}
@@ -145,6 +152,9 @@ def compute_scores_by_pd_all_models(data_base_dir: str, ground_truth_files_dir: 
         with open(os.path.join(output_file_path, "all_scores.json"), "w") as f:
             f.write(json.dumps(all_scores, indent=4))
 
+    fig,_ = create_multimodel_pd_boxplot_by_df_acc(pd.DataFrame(plot_data), "score", "accuracy", pd_column_name="pd", y_min_max=(0, 1.4),y_label="Models accuracy distribution (NLI)")
+    fig.savefig(Path(output_file_path) / "multimodel_mnli_pd_boxplot_acc.png", dpi=400, bbox_inches='tight')
+    plt.close(fig)
 
 if __name__ == "__main__":
     fire.Fire(compute_scores_by_pd_all_models)

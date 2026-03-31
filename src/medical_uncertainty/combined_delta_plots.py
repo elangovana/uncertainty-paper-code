@@ -19,23 +19,11 @@ pd_levels_symbol_maps = {
     "All": "="
 }
 
-models = [
-    ('Gemini 2.5 Pro', Path(
-        __file__).parent.parent.parent / "data_dir/checkpoints/gemini25pro/gemini25pro_scores_exclude_small_samples.json"),
-    ('Gemini 3.0 Preview', Path(
-        __file__).parent.parent.parent / "data_dir/checkpoints/gemini30preview/gemini30preview_scores_exclude_small_samples.json"),
-    ('Gemini 3.1 Pro', Path(
-        __file__).parent.parent.parent / "data_dir/checkpoints/gemini31propreview/gemini31propreview_scores_exclude_small_samples.json"),
-    ('GPT 5.1',
-     Path(__file__).parent.parent.parent / "data_dir/checkpoints/gpt-5.1/gpt-5.1_scores_exclude_small_samples.json")
-]
 
-def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = None, column_name_human=None):
+
+def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = None, column_name_human=None, pd_column_name = 'PA'):
     """Create plot showing all three models together for accuracy"""
     fig, ax = plt.subplots(figsize=(20, 10))
-
-
-    pvalues = []
 
     # Group by PA level and calculate averages
     all_data = []
@@ -44,8 +32,8 @@ def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = Non
     median_properties = dict(color='black', linewidth=2.5)
     for pa_level in pd_levels:
         #if pa_level == "All": continue
-        print(pa_level)
-        pa_data = df_model[df_model['PA'] == pa_level]
+        pa_data = df_model[df_model[pd_column_name] == pa_level]
+        if not len(pa_data): continue
         score_values = pa_data[column_name_model]
 
         all_data.append(score_values)
@@ -60,7 +48,7 @@ def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = Non
         for pa_level in pd_levels:
 
             # add human
-            all_data.append(df_h[df_h['PA'] == pa_level][column_name_human])
+            all_data.append(df_h[df_h[pd_column_name] == pa_level][column_name_human])
             all_data_props.append(
                 {"pa_level": pa_level,
                  "type": "H",  # model
@@ -68,14 +56,6 @@ def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = Non
                  }
 
             )
-
-
-
-
-
-
-
-
 
     ax.set_ylim(0.0, 1.01)
 
@@ -112,7 +92,7 @@ def load_data(json_path):
     return pd.DataFrame(data)
 
 
-def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3)):
+def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3), pd_column_name="PA"):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
     sns.set(
@@ -130,7 +110,9 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
     df_fmt = pd.DataFrame()
     for pa_level in pd_levels:
 
-        pa_data = df[df['PA'] == pa_level]
+        pa_data = df[df[pd_column_name] == pa_level]
+        if not len(pa_data): continue
+
         deltas = pa_data[column_name].values
 
         df_fmt[str(pa_level)] = deltas
@@ -226,43 +208,11 @@ def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metri
     return fig
 
 
-def create_boxplot_by_pd_df_all_models(metric_label, column_model_name,column_human_name=None  ):
-    dfs = []
-    for i, (model_name, json_path) in enumerate(models):
-        df_m = load_data(json_path)
-        df_m["model"] = model_name
-        # df_m["model_marker"] =  [model_name]
-        dfs.append(df_m)
-
-    df = pd.concat(dfs)
-
-    # just use anyone as human performance is the same.
-    df_h= None
-    if column_human_name:
-        human_data = models[0][1]
-
-        df_h = load_data(human_data)
-
-    return create_boxplot_by_pd_df(metric_label, df, column_model_name, df_h, column_human_name )
 
 
-def create_multimodel_mean_variance_pd_comparer_boxplot_by_df(column_name, metric_label, **kwargs):
-    dfs = []
-    for i, (model_name, json_path) in enumerate(models):
-        df_m = load_data(json_path)
-        df_m["model"] = model_name
-        #df_m["model_marker"] =  [model_name]
-        dfs.append(df_m)
+def create_multimodel_pd_boxplot_by_df_acc(df, column_name, metric_label, **kwargs):
+    fig, (ax, df_fmt) = create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, **kwargs)
 
-    df = pd.concat(dfs)
-
-    fig, (ax, df_fmt) =  create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, **kwargs)
-
-    return fig, (ax, df_fmt)
-
-def create_multimodel_pd_boxplot_by_df_acc():
-
-    fig, (ax, df_fmt) = create_multimodel_mean_variance_pd_comparer_boxplot_by_df("model_accuracy","Accuracy" , y_min_max=(0,1.4), y_label="Models accuracy distribution")
     for i, col in enumerate(list(df_fmt.columns)):
         if col.lower() == "all": continue
         mean_value = df_fmt[col].mean()
@@ -272,34 +222,55 @@ def create_multimodel_pd_boxplot_by_df_acc():
 
     return fig, (ax, df_fmt)
 
-def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot():
-    metric_label = "F1"
-    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_f1-score', metric_label, y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{i,{metric_label}}}$ (Models $\\Delta$ distribution)")
 
 
-def create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot():
-    return create_multimodel_mean_variance_pd_comparer_boxplot_by_df('agg_human - model_mean_accuracy', "Accuracy", y_label = f"$\\Delta$ = $H_{{Acc}} - M_{{i,Acc}}$ (Models $\\Delta$ distribution)")
+
+def _load_chexpert_scores(models):
+    dfs = []
+    for i, (model_name, json_path) in enumerate(models):
+        df_m = load_data(json_path)
+        df_m["model"] = model_name
+        # df_m["model_marker"] =  [model_name]
+        dfs.append(df_m)
+    df = pd.concat(dfs)
+    return df
+
+
+
+
+
 
 
 def main():
+    chexpert_models = [
+        ('Gemini 2.5 Pro', Path(
+            __file__).parent.parent.parent / "data_dir/checkpoints/gemini25pro/gemini25pro_scores_exclude_small_samples.json"),
+        ('Gemini 3.0 Preview', Path(
+            __file__).parent.parent.parent / "data_dir/checkpoints/gemini30preview/gemini30preview_scores_exclude_small_samples.json"),
+        ('Gemini 3.1 Pro', Path(
+            __file__).parent.parent.parent / "data_dir/checkpoints/gemini31propreview/gemini31propreview_scores_exclude_small_samples.json"),
+        ('GPT 5.1',
+         Path(__file__).parent.parent.parent / "data_dir/checkpoints/gpt-5.1/gpt-5.1_scores_exclude_small_samples.json")
+    ]
+    df_chexpert = _load_chexpert_scores(chexpert_models)
     print("Creating Combined Delta F1 and Accuracy Analysis...")
 
     output_dir = Path(__file__).parent.parent.parent / "visualizations"
     output_dir.mkdir(exist_ok=True)
 
-    fig,_ = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_f1_comparer_boxplot()
+    fig,_ = create_mean_variance_pd_comparer_boxplot_by_df(df_chexpert,'agg_human - model_mean_f1-score', "F1", y_label = f"$\\Delta$ = $H_{{F1}} - M_{{i,F1}}$ (Models $\\Delta$ distribution)")
     fig.savefig(output_dir / "combined_simple_boxplot_delte_f1_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta F1 Analysis visualization saved")
 
-    fig,_ = create_multimodel_mean_variance_pd_delta_h_vs_allmodels_acc_comparer_boxplot()
+    fig,_ = create_mean_variance_pd_comparer_boxplot_by_df(df_chexpert,'agg_human - model_mean_accuracy', "Accuracy", y_label = f"$\\Delta$ = $H_{{Acc}} - M_{{i,Acc}}$ (Models $\\Delta$ distribution)")
     fig.savefig(output_dir / "combined_simple_boxplot_delte_accuracy_analysis.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("Combined simple boxplot Delta accuracy Analysis visualization saved")
 
 
 
-    fig, _ = create_multimodel_pd_boxplot_by_df_acc()
+    fig, _ = create_multimodel_pd_boxplot_by_df_acc(df_chexpert, "model_accuracy", "Accuracy", y_min_max=(0, 1.4), y_label="Models accuracy distribution")
     fig.savefig(output_dir / "multimodel_chexpert_pd_boxplot_acc.png", dpi=400, bbox_inches='tight')
     plt.close(fig)
     print("multimodel_pd_boxplot acc saved")
