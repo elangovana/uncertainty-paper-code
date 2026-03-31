@@ -21,7 +21,7 @@ pd_levels_symbol_maps = {
 
 
 
-def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = None, column_name_human=None, pd_column_name = 'PA'):
+def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = None, column_name_human=None, pd_column_name = 'PA', pd_levels_color_map=None):
     """Create plot showing all three models together for accuracy"""
     fig, ax = plt.subplots(figsize=(20, 10))
 
@@ -30,7 +30,8 @@ def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = Non
     all_data_props = []
     # Define median properties with a specific color and linewidth
     median_properties = dict(color='black', linewidth=2.5)
-    for pa_level in pd_levels:
+    pd_levels_to_color_map = pd_levels_color_map or color_map
+    for pa_level in pd_levels_to_color_map:
         #if pa_level == "All": continue
         pa_data = df_model[df_model[pd_column_name] == pa_level]
         if not len(pa_data): continue
@@ -66,7 +67,7 @@ def create_boxplot_by_pd_df(metric_label, df_model, column_name_model,df_h = Non
         box = bplot['boxes'][i]
 
 
-        box.set(facecolor= color_map[all_data_props[i]["pa_level"]], alpha=0.7)
+        box.set(facecolor= pd_levels_to_color_map[all_data_props[i]["pa_level"]], alpha=0.7)
         # change hatch
         if all_data_props[i]["hatch"]:
             box.set(hatch=all_data_props[i]["hatch"])
@@ -92,7 +93,7 @@ def load_data(json_path):
     return pd.DataFrame(data)
 
 
-def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3), pd_column_name="PA"):
+def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3), pd_column_name="PA",  pd_levels_color_map=None):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
     sns.set(
@@ -108,7 +109,8 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
     all_data_labels = []
 
     df_fmt = pd.DataFrame()
-    for pa_level in pd_levels:
+    pd_levels_color_map = pd_levels_color_map or color_map
+    for pa_level in pd_levels_color_map:
 
         pa_data = df[df[pd_column_name] == pa_level]
         if not len(pa_data): continue
@@ -132,7 +134,7 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
     if not y_label:
         y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{{metric_label}}}$"
     sns.boxplot(data=df_fmt, ax=ax, fill=True, showmeans=True, order=all_data_labels,
-                palette={str(k): v for k, v in color_map.items()},
+                palette={str(k): v for k, v in pd_levels_color_map.items()},
                 meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"},patch_artist=True)
 
     # adding statistical annotation
