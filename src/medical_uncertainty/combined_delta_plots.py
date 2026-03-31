@@ -140,7 +140,7 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
     ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
     ax.tick_params(axis='both', labelsize=20)
     starbars.draw_annotation(mean_p_values, ax=ax, fontsize=20, bar_gap=0.01)
-    starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, bar_gap=0.01, color='red')
+    starbars.draw_annotation(variance_p_values, ax=ax, fontsize=20, bar_gap=0.01, color='blue')
 
     ax.set_ylim(*y_min_max)
 
