@@ -9,7 +9,8 @@ from sklearn.metrics import accuracy_score
 import structlog
 import matplotlib.pyplot as plt
 from statistics import median
-from medical_uncertainty.combined_delta_plots import create_multimodel_pd_boxplot_by_df_acc
+from medical_uncertainty.combined_delta_plots import create_multimodel_pd_boxplot_by_df_acc, \
+    create_pd_means_comparer_boxplot_by_df, create_paired_comparer_boxplot_by_df
 
 _logger = structlog.get_logger()
 UNKNOWN_PREDICTION = "-"
@@ -222,7 +223,7 @@ def compute_pd_summeval(data_base_dir: str, ground_truth_files_dir: str, output_
         output_file_name = os.path.join(output_file_path, f"{input_file_prefix}_{gt_prefix}_scores_by_pd.json")
 
         scores_by_pd = compute_scores_by_pd_summeval(data_dir, ground_truth_file, output_file_name, criteria)
-        plot_data.extend([{"pd": float(k), "delta":float(k)- v["score"]} for k, v in scores_by_pd.items()])
+        plot_data.extend([{"pd": float(k), "expected":float(k), "model": v["score"]} for k, v in scores_by_pd.items()])
 
         if datadir_model_prefix not in all_scores:
             all_scores[datadir_model_prefix] = {}
@@ -232,7 +233,7 @@ def compute_pd_summeval(data_base_dir: str, ground_truth_files_dir: str, output_
     with open(os.path.join(output_file_path, "all_scores_summeval.json"), "w") as f:
         f.write(json.dumps(all_scores, indent=4))
 
-    fig,_ = create_multimodel_pd_boxplot_by_df_acc(pd.DataFrame(plot_data), "delta", "$\\Delta_{{EM}}$ ", pd_column_name="pd", y_min_max=(-0.2, 1.5),y_label="G-Eval $\\Delta_{{EM}}$ accuracy distribution ", pd_levels_color_map =  {0.33: '#d62728' , 0.67:'#ff7f0e',  1.0: '#2ca02c'}
+    fig = create_paired_comparer_boxplot_by_df(pd.DataFrame(plot_data), "expected", "model","$\\Delta_{{EM}}$ ", pd_column_name="pd", y_min_max=(-0.2, 1.5),y_label="G-Eval $\\Delta_{{EM}}$ accuracy distribution ", pd_levels_color_map =  {0.33: '#d62728' , 0.67:'#ff7f0e',  1.0: '#2ca02c'}
 )
     fig.savefig(Path(output_file_path) / "multimodel_geval_pd_boxplot_delta_acc.png", dpi=400, bbox_inches='tight')
     plt.close(fig)

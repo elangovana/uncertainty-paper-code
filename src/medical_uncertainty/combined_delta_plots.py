@@ -93,6 +93,59 @@ def load_data(json_path):
     return pd.DataFrame(data)
 
 
+def create_pd_means_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3), pd_column_name="PA",  pd_levels_color_map=None):
+    sns.set_style("darkgrid")
+    sns.set(font_scale=2.5)
+    sns.set(
+        rc={'axes.facecolor': 'none', 'figure.facecolor': 'none', "grid.color": "lightgray", "axes.edgecolor": "black"}
+    )
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    mean_p_values = []
+
+    # Group by PA level and calculate averages
+    all_data_labels = []
+
+    df_fmt = pd.DataFrame()
+    pd_levels_color_map = pd_levels_color_map or color_map
+    for pa_level in pd_levels_color_map:
+
+        pa_data = df[df[pd_column_name] == pa_level]
+        if not len(pa_data): continue
+
+        deltas = pa_data[column_name].values
+
+        df_fmt[str(pa_level)] = deltas
+        all_data_labels.append(str(pa_level))
+
+    for p in itertools.combinations(all_data_labels, 2):
+        if p[0] == "All" or p[1] == "All": continue
+
+        ttest_result = ttest_ind(df_fmt[p[0]], df_fmt[p[1]], nan_policy="omit", equal_var=False)
+        mean_p_values.append(
+            (p[0], p[1], ttest_result.pvalue)
+        )
+
+
+    x_label = "$p_d$"
+    if not y_label:
+        y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{{metric_label}}}$"
+    sns.boxplot(data=df_fmt, ax=ax, fill=True, showmeans=True, order=all_data_labels,
+                palette={str(k): v for k, v in pd_levels_color_map.items()},
+                meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"},patch_artist=True)
+
+    # adding statistical annotation
+    ax.set_ylabel(y_label, fontsize=20, fontweight='bold')
+    ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
+    ax.tick_params(axis='both', labelsize=20)
+    starbars.draw_annotation(mean_p_values, ax=ax, fontsize=20, bar_gap=0.01)
+
+    ax.set_ylim(*y_min_max)
+
+    return fig, (ax, df_fmt)
+
+
 def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label, y_label=None, y_min_max=(-0.3, 1.3), pd_column_name="PA",  pd_levels_color_map=None):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
@@ -149,7 +202,7 @@ def create_mean_variance_pd_comparer_boxplot_by_df(df, column_name, metric_label
     return fig, (ax, df_fmt)
 
 
-def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metric_label, y_label=None):
+def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metric_label, y_label=None, pd_column_name="PA", y_min_max=(-0.3, 0.6), pd_levels_color_map=None):
     sns.set_style("darkgrid")
     sns.set(font_scale=2.5)
     sns.set(
@@ -160,14 +213,15 @@ def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metri
 
     mean_p_values = {}
     max_delta_by_pa = {}
+    pd_levels_color_map = pd_levels_color_map or color_map
 
 
     # Group by PA level and calculate averages
     all_data_labels = []
 
     df_fmt = pd.DataFrame()
-    for pa_level in pd_levels:
-        pa_data = df[df['PA'] == pa_level]
+    for pa_level in pd_levels_color_map:
+        pa_data = df[df[pd_column_name] == pa_level]
         deltas = list(pa_data[column_name_1] - pa_data[column_name_2])
 
 
@@ -182,7 +236,7 @@ def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metri
     if not y_label:
         y_label = f"$\\Delta$ = $H_{{{metric_label}}} - M_{{{metric_label}}}$"
     boxplt = sns.boxplot(data=df_fmt, ax=ax, fill=True, showmeans=True, order=all_data_labels,
-                         palette={str(k): v for k, v in color_map.items()},
+                         palette={str(k): v for k, v in pd_levels_color_map.items()},
                          meanprops={"marker": "s", "markerfacecolor": "white", "markeredgecolor": "white"})
 
     for i, pa in enumerate(all_data_labels):
@@ -206,7 +260,7 @@ def create_paired_comparer_boxplot_by_df(df, column_name_1, column_name_2, metri
     ax.set_xlabel(x_label, fontsize=20, fontweight='bold')
     ax.tick_params(axis='both', labelsize=20)
 
-    ax.set_ylim(-0.3, 0.6)
+    ax.set_ylim(*y_min_max)
     return fig
 
 
